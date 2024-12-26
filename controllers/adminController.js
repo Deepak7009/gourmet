@@ -171,9 +171,11 @@ const deleteVendor = async (req, res) => {
 const addItem = async (req, res) => {
     try {
         const { name, category, price, description, quantity, status } = req.body;
+        
         const files = req.files || {}; // Access uploaded files
         let uploadedImageUrl = null;
-
+        
+        console.log("admin is adding item")
         if (files.image && files.image.length > 0) {
             const imageFilePath = files.image[0]?.path; // Get the image file path
             const uploadedImage = await uploadOnCloudinary(imageFilePath); // Upload image to Cloudinary

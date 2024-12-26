@@ -3,6 +3,7 @@ const Item = require('../models/itemModel');
 const Order = require('../models/orderModel');
 
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 
 const viewItems = async (req, res) => {
