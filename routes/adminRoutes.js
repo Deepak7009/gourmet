@@ -13,7 +13,8 @@ const {
     deleteItem,
     getVendorDetails,
     signupAdmin,
-    loginAdmin
+    loginAdmin,
+    getItemByCategory
 } = require('../controllers/adminController');
 const { protectAdmin } = require('../middlewares/authMiddleware');
 const { upload } = require('../middlewares/multer');
@@ -60,5 +61,8 @@ router.get('/orders', protectAdmin, getAllOrders);
 
 // Get orders for a particular vendor (if needed)
 router.get('/vendor/orders', protectAdmin, getVendorOrders);
+router.get('/category-item', getItemByCategory);
+
+
 
 module.exports = router;

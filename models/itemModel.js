@@ -8,7 +8,7 @@ const itemSchema = new mongoose.Schema({
     },
     price: { type: Number, required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
-    photo: { type: String, required: true },
+    photo: { type: String, required: false },
     description: { type: String, required: true },
     quantity: { type: Number, required: true },
     status: { type: String, enum: ["available", "soldout"], required: true }

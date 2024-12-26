@@ -171,10 +171,10 @@ const deleteVendor = async (req, res) => {
 const addItem = async (req, res) => {
     try {
         const { name, category, price, description, quantity, status } = req.body;
-        
+
         const files = req.files || {}; // Access uploaded files
         let uploadedImageUrl = null;
-        
+
         console.log("admin is adding item")
         if (files.image && files.image.length > 0) {
             const imageFilePath = files.image[0]?.path; // Get the image file path
@@ -199,7 +199,7 @@ const addItem = async (req, res) => {
             description,
             quantity,
             status,
-            photo: uploadedImageUrl, // Include the photo URL
+            photo: uploadedImageUrl,
             createdBy: req.user.id // Assuming `req.user.id` is the logged-in admin's ID
         });
 
@@ -409,4 +409,16 @@ const getVendorOrders = async (req, res) => {
     }
 };
 
-module.exports = { getAllOrders, getVendorOrders, updateVendorCartItem, updateOrderStatusByAdmin, createVendor, updateVendor, deleteVendor, addItem, updateItem, deleteItem, getVendorDetails, signupAdmin, loginAdmin };
+const getItemByCategory = async (req, res) => {
+    const { category } = req.query;
+    try {
+        const item = await Item.find({ category: category }).populate('vendor', 'name email').populatate('order', 'status');
+        if (item.length === 0) {
+            return res.status(404).json({ msg: 'No item found in this category' });
+        }
+        res.status(200).json(item);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+}
+module.exports = {getItemByCategory, getAllOrders, getVendorOrders, updateVendorCartItem, updateOrderStatusByAdmin, createVendor, updateVendor, deleteVendor, addItem, updateItem, deleteItem, getVendorDetails, signupAdmin, loginAdmin };
