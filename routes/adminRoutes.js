@@ -1,4 +1,5 @@
-const express = require('express');
+const express = require("express");
+
 const {
     getAllOrders,
     getVendorOrders,
@@ -19,6 +20,7 @@ const { upload } = require('../middlewares/multer');
 
 const router = express.Router();
 
+
 // Admin Signup route
 router.post('/signup', signupAdmin);
 
@@ -32,31 +34,31 @@ router.post('/vendor', protectAdmin, createVendor);
 router.post('/item', protectAdmin, upload.fields([{ name: "image" }]), addItem);
 
 // Update an existing item (with image upload)
-router.put("/item/:id", protectAdmin, upload.fields([{ name: "image" }]), updateItem);
+router.put("/item", protectAdmin, upload.fields([{ name: "image" }]), updateItem);
 
 // Delete an item
-router.delete("/item/:id", protectAdmin, deleteItem);
+router.delete("/item", protectAdmin, deleteItem);
 
 // Get vendor details and their cart
-router.get("/vendor/:id", protectAdmin, getVendorDetails);
+router.get("/vendor", protectAdmin, getVendorDetails);
 
 // Update vendor details
-router.put("/vendor/:id", protectAdmin, updateVendor);
+router.put("/vendor", protectAdmin, updateVendor);
 
 // Delete vendor (added missing deleteVendor route)
-router.delete("/vendor/:id", protectAdmin, deleteVendor);
+router.delete("/vendor", protectAdmin, deleteVendor);
 
 
 // Admin updates item in vendor's cart
-router.put("/vendor/:vendorId/cart/item/:itemId", protectAdmin, updateVendorCartItem);
+router.put("/vendor/cart/item", protectAdmin, updateVendorCartItem);
 
 // Admin updates order status and payment status
-router.put("/order/:orderId/status", protectAdmin, updateOrderStatusByAdmin);
+router.put("/order/status", protectAdmin, updateOrderStatusByAdmin);
 
 // Get all orders (if needed)
 router.get('/orders', protectAdmin, getAllOrders);
 
 // Get orders for a particular vendor (if needed)
-router.get('/vendor/:vendorId/orders', protectAdmin, getVendorOrders);
+router.get('/vendor/orders', protectAdmin, getVendorOrders);
 
 module.exports = router;
