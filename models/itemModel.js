@@ -5,7 +5,10 @@ const itemSchema = new mongoose.Schema({
     category: { type: String, required: true },
     price: { type: Number, required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
-    photo: { type: String, required: true }
+    photo: { type: String, required: true },
+    description: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    status: { type: String, enum: ["available", "soldout"], required: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Item', itemSchema);

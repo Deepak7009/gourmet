@@ -120,7 +120,7 @@ const deleteVendor = async (req, res) => {
 // Add item
 const addItem = async (req, res) => {
     try {
-        const { name, category, price } = req.body;
+        const { name, category, price, description, quantity, status } = req.body;
         const files = req.files || {}; // Access uploaded files
         let uploadedImageUrl = null;
 
@@ -134,12 +134,21 @@ const addItem = async (req, res) => {
             }
         }
 
+        // Validate the status field (either "available" or "soldout")
+        if (!["available", "soldout"].includes(status)) {
+            return res.status(400).json({ msg: "Invalid status value" });
+        }
+
+        // Create the item based on the schema
         const item = await Item.create({
             name,
             category,
             price,
-            photo: uploadedImageUrl, // Include the photo URL 
-            createdBy: req.user.id
+            description,
+            quantity,
+            status,
+            photo: uploadedImageUrl, // Include the photo URL
+            createdBy: req.user.id // Assuming `req.user.id` is the logged-in admin's ID
         });
 
         res.status(201).json(item);
@@ -148,4 +157,70 @@ const addItem = async (req, res) => {
     }
 };
 
-module.exports = { createVendor, updateVendor, deleteVendor, addItem ,deleteItemFromCart,getVendorDetails};
+// Update item
+const updateItem = async (req, res) => {
+    try {
+        const { name, category, price, description, quantity, status } = req.body;
+        const itemId = req.params.id;
+        const files = req.files || {}; // Access uploaded files
+        let uploadedImageUrl = null;
+
+        const item = await Item.findById(itemId);
+        if (!item) {
+            return res.status(404).json({ msg: "Item not found" });
+        }
+
+        // Handle image upload (only if new image is uploaded)
+        if (files.image && files.image.length > 0) {
+            const imageFilePath = files.image[0]?.path; // Get the image file path
+            const uploadedImage = await uploadOnCloudinary(imageFilePath); // Upload image to Cloudinary
+            if (uploadedImage && uploadedImage.url) {
+                uploadedImageUrl = uploadedImage.url; // Save the uploaded image URL
+            } else {
+                return res.status(500).json({ msg: "Image upload failed" });
+            }
+        }
+
+        // Validate status
+        if (!["available", "soldout"].includes(status)) {
+            return res.status(400).json({ msg: "Invalid status value" });
+        }
+
+        // Update item details
+        item.name = name || item.name;
+        item.category = category || item.category;
+        item.price = price || item.price;
+        item.description = description || item.description;
+        item.quantity = quantity || item.quantity;
+        item.status = status || item.status;
+        item.photo = uploadedImageUrl || item.photo;
+
+        // Save the updated item
+        await item.save();
+
+        res.status(200).json(item);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+// Delete item
+const deleteItem = async (req, res) => {
+    try {
+        const itemId = req.params.id;
+        const item = await Item.findById(itemId);
+        if (!item) {
+            return res.status(404).json({ msg: "Item not found" });
+        }
+
+        // Delete the item from the database
+        await item.remove();
+
+        res.status(200).json({ msg: "Item deleted successfully" });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+
+module.exports = { createVendor, updateVendor, deleteVendor, addItem, updateItem, deleteItem, deleteItemFromCart, getVendorDetails };

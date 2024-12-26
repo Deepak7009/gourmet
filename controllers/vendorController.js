@@ -14,7 +14,10 @@ const addToCart = async (req, res) => {
     try {
         const { itemId } = req.body;
         const vendor = await Vendor.findByIdAndUpdate(req.user.id, { $push: { cart: itemId } }, { new: true });
-        res.status(200).json(vendor);
+        const item = await Item.findById(itemId);
+        item.quantity -= 1;
+        await item.save();
+        res.status(200).json({ message: "Item added successfully", vendor });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
