@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const cartItemsSchema = new mongoose.Schema({
-  cancelAnimationFrameart: {
+    cart: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cart",
     required: true,
@@ -9,11 +9,6 @@ const cartItemsSchema = new mongoose.Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Item",
-    required: true,
-  },
-
-  size: {
-    type: String,
     required: true,
   },
   quantity: {
@@ -25,15 +20,11 @@ const cartItemsSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  discountedPrice: {
-    type: Number,
-    required: true,
-  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Vendor",
     required: true,
-  }
+  },
 });
 
 const CartItem = mongoose.model("Cartitems", cartItemsSchema);
