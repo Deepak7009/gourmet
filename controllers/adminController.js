@@ -4,6 +4,7 @@ const Item = require('../models/itemModel');
 const { generateToken } = require('../utils/jwt');
 const { uploadOnCloudinary } = require("../utils/cloudinary.js");
 const Order = require('../models/orderModel.js');
+const jwt = require('jsonwebtoken');
 
 
 // Admin Signup (Registration)
@@ -67,7 +68,7 @@ const loginAdmin = async (req, res) => {
 // Get vendor details and cart
 const getVendorDetails = async (req, res) => {
     try {
-        const vendorId = req.params.id;
+        const vendorId = req.query;
 
         // Find vendor and populate cart items
         const vendor = await Vendor.findById(vendorId).populate('cart');
@@ -104,7 +105,7 @@ const createVendor = async (req, res) => {
 // Update vendor details
 const updateVendor = async (req, res) => {
     try {
-        const vendorId = req.params.id;
+        const vendorId = req.query;
         const { name, email, password } = req.body;
 
         const updatedVendor = await Vendor.findByIdAndUpdate(
@@ -126,7 +127,7 @@ const updateVendor = async (req, res) => {
 // Delete vendor
 const deleteVendor = async (req, res) => {
     try {
-        const vendorId = req.params.id;
+        const vendorId = req.query;
 
         // Check if the vendor exists
         const vendor = await Vendor.findById(vendorId);
@@ -190,7 +191,7 @@ const addItem = async (req, res) => {
 const updateItem = async (req, res) => {
     try {
         const { name, category, price, description, quantity, status } = req.body;
-        const itemId = req.params.id;
+        const itemId = req.query;
         const files = req.files || {}; // Access uploaded files
         let uploadedImageUrl = null;
 
@@ -236,7 +237,7 @@ const updateItem = async (req, res) => {
 // Delete item
 const deleteItem = async (req, res) => {
     try {
-        const itemId = req.params.id;
+        const itemId = req.query;
         const item = await Item.findById(itemId);
         if (!item) {
             return res.status(404).json({ msg: "Item not found" });
@@ -254,7 +255,7 @@ const deleteItem = async (req, res) => {
 // Update Item in Vendor's Cart
 const updateVendorCartItem = async (req, res) => {
     try {
-        const { vendorId, itemId } = req.params;  // Get vendor ID and item ID from params
+        const { vendorId, itemId } = req.query;  // Get vendor ID and item ID from query
         const { quantity } = req.body;  // Get the new quantity from request body
 
         // Validate the quantity
@@ -305,7 +306,7 @@ const updateVendorCartItem = async (req, res) => {
 // Update Order Status (For Admin to Update Order Status)
 const updateOrderStatusByAdmin = async (req, res) => {
     try {
-        const { orderId } = req.params;  // Get order ID from URL parameters
+        const { orderId } = req.query;  // Get order ID from URL parameters
         const { status, paymentStatus } = req.body;  // Get status and payment status from request body
 
         // Validate status and paymentStatus
@@ -363,7 +364,7 @@ const getAllOrders = async (req, res) => {
 // Function to get orders for a particular vendor
 const getVendorOrders = async (req, res) => {
     try {
-        const { vendorId } = req.params;  // Get vendor ID from URL params
+        const { vendorId } = req.query;  // Get vendor ID from URL query
 
         // Validate the vendor ID
         const vendor = await Vendor.findById(vendorId);

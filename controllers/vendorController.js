@@ -11,6 +11,7 @@ const viewItems = async (req, res) => {
     }
 };
 
+
 const addToCart = async (req, res) => {
     try {
         const { itemId } = req.body;
@@ -91,7 +92,7 @@ const placeOrder = async (req, res) => {
 // Function to get orders for a particular vendor
 const getVendorOrders = async (req, res) => {
     try {
-        const { vendorId } = req.params;  // Get vendor ID from URL params
+        const { vendorId } = req.query;  // Get vendor ID from URL query
 
         // Validate the vendor ID
         const vendor = await Vendor.findById(vendorId);
@@ -117,7 +118,7 @@ const getVendorOrders = async (req, res) => {
 // Update order status to delivered
 const updateOrderStatus = async (req, res) => {
     try {
-        const { orderId, status, payStatus } = req.params;  // Get the order ID from URL parameters
+        const { orderId, status, payStatus } = req.query;  // Get the order ID from URL parameters
         const vendorId = req.user.id;    // Assuming the vendor is logged in and their ID is in `req.user.id`
 
         // Find the order by ID
@@ -145,5 +146,39 @@ const updateOrderStatus = async (req, res) => {
     }
 };
 
+// Vendor Login
+const loginVendor = async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
-module.exports = { viewItems, placeOrder, getVendorOrders, updateOrderStatus };
+        // Find vendor by email
+        const vendor = await Vendor.findOne({ email });
+        if (!vendor) {
+            return res.status(400).json({ msg: "Vendor not found" });
+        }
+
+        // Compare password with the stored hashed password
+        const isMatch = await bcrypt.compare(password, vendor.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: "Invalid credentials" });
+        }
+
+        // Generate a JWT token
+        const token = jwt.sign(
+            { id: vendor._id, email: vendor.email },
+            process.env.JWT_SECRET, // Make sure to set JWT_SECRET in .env
+            { expiresIn: '1h' } // Token expiration
+        );
+
+        res.status(200).json({
+            msg: "Login successful",
+            token, // Send token in response
+            vendor: { id: vendor._id, name: vendor.name, email: vendor.email }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
+module.exports = { viewItems, placeOrder, getVendorOrders, updateOrderStatus, loginVendor };
