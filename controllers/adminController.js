@@ -5,8 +5,7 @@ const { generateToken } = require('../utils/jwt');
 const { uploadOnCloudinary } = require("../utils/cloudinary.js");
 const Order = require('../models/orderModel.js');
 const jwt = require('jsonwebtoken');
-const bcrypt = require("bcryptjs");
-
+const bcrypt = require('bcryptjs');
 
 
 // Admin Signup (Registration)
@@ -96,8 +95,27 @@ const getVendorDetails = async (req, res) => {
 const createVendor = async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        const vendor = await Vendor.create({ name, email, password });
+
+        // Check if vendor already exists
+        const existingVendor = await Vendor.findOne({ email });
+        if (existingVendor) {
+            return res.status(400).json({ msg: "Vendor already exists" });
+        }
+
+        // Hash the password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create a new vendor with hashed password
+        const vendor = await Vendor.create({
+            name,
+            email,
+            password: hashedPassword
+        });
+
+        // Associate the vendor with the admin (optional based on your application logic)
         await Admin.findByIdAndUpdate(req.user.id, { $push: { vendors: vendor._id } });
+
         res.status(201).json(vendor);
     } catch (error) {
         res.status(400).json({ error: error.message });
