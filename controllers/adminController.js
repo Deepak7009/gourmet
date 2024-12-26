@@ -276,7 +276,7 @@ const deleteItem = async (req, res) => {
 
 const updateVendorCartItem = async (req, res) => {
     try {
-        const { orderId } = req.params; // Get orderId from the URL parameters
+        const { orderId } = req.query; // Get orderId from the URL parameters
         const { items } = req.body;     // Get the new items array from the request body
 
         // Validate the items array

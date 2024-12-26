@@ -15,21 +15,6 @@ const viewItems = async (req, res) => {
     }
 };
 
-
-const addToCart = async (req, res) => {
-    try {
-        const { itemId } = req.body;
-        const vendor = await Vendor.findByIdAndUpdate(req.user.id, { $push: { cart: itemId } }, { new: true });
-        const item = await Item.findById(itemId);
-        item.quantity -= 1;
-        await item.save();
-        res.status(200).json({ message: "Item added successfully", vendor });
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-
 // Place an order
 const placeOrder = async (req, res) => {
     try {
@@ -43,40 +28,45 @@ const placeOrder = async (req, res) => {
         }
 
         // Validate that all items exist in the database
-        const itemDocs = await Item.find({ '_id': { $in: items.map(item => item.itemId) } });
+        const itemIds = items.map(item => item.item); // Extract item IDs from the items array
+        const itemDocs = await Item.find({ '_id': { $in: itemIds } });
         if (itemDocs.length !== items.length) {
             return res.status(400).json({ msg: "Some items are not found" });
         }
 
         // Check and update the quantity of each item
-        const updatedItems = [];
+        const orderItems = []; // This will store the items with their quantities for the order
         for (let i = 0; i < items.length; i++) {
-            const item = itemDocs.find(i => i._id.toString() === items[i].itemId);
+            const { item: itemId, quantity } = items[i];
+            const itemDoc = itemDocs.find(doc => doc._id.toString() === itemId);
 
             // Check if there is enough quantity for the item
-            if (item.quantity < items[i].quantity) {
-                return res.status(400).json({ msg: `Not enough quantity for item: ${item.name}` });
+            if (itemDoc.quantity < quantity) {
+                return res.status(400).json({ msg: `Not enough quantity for item: ${itemDoc.name}` });
             }
 
             // Decrease the quantity of the item
-            item.quantity -= items[i].quantity;
+            itemDoc.quantity -= quantity;
 
             // If quantity becomes 0, mark it as 'soldout'
-            if (item.quantity === 0) {
-                item.status = 'soldout';
+            if (itemDoc.quantity === 0) {
+                itemDoc.status = 'soldout';
             }
 
             // Save the updated item
-            await item.save();
+            await itemDoc.save();
 
-            // Push item to updatedItems array
-            updatedItems.push(item._id);
+            // Push item to orderItems array with its quantity
+            orderItems.push({ item: itemDoc._id, quantity });
         }
 
         // Create the order
         const newOrder = new Order({
-            items: updatedItems, // Array of item IDs
-            totalAmount: totalAmount,
+            items: orderItems, // Array of items with quantities
+            totalAmount: totalAmount || orderItems.reduce((total, orderItem) => {
+                const itemDoc = itemDocs.find(doc => doc._id.toString() === orderItem.item.toString());
+                return total + (itemDoc.price * orderItem.quantity);
+            }, 0), // Recalculate total if not provided
             vendor: vendorId,
             paymentMethod: paymentMethod || 'cash',
             deliveryAddress: deliveryAddress || '',
@@ -93,6 +83,7 @@ const placeOrder = async (req, res) => {
     }
 };
 
+
 // Function to get orders for a particular vendor
 const getVendorOrders = async (req, res) => {
     try {
@@ -106,7 +97,7 @@ const getVendorOrders = async (req, res) => {
 
         // Find all orders for this vendor
         const orders = await Order.find({ vendor: vendorId })
-            .populate('items', 'name price photo')  // Populating item details
+            .populate('items.item', 'name price photo')  // Populating item details
             .populate('vendor', 'name email');     // Populating vendor details
 
         if (orders.length === 0) {
