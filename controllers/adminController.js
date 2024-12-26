@@ -5,6 +5,8 @@ const { generateToken } = require('../utils/jwt');
 const { uploadOnCloudinary } = require("../utils/cloudinary.js");
 const Order = require('../models/orderModel.js');
 const jwt = require('jsonwebtoken');
+const bcrypt = require("bcryptjs");
+
 
 
 // Admin Signup (Registration)
