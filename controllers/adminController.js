@@ -410,9 +410,9 @@ const getVendorOrders = async (req, res) => {
 };
 
 const getItemByCategory = async (req, res) => {
-    const { category } = req.query;
+    const { category } = req.body;
     try {
-        const item = await Item.find({ category: category }).populate('vendor', 'name email').populatate('order', 'status');
+        const item = await Item.find({ category: category });
         if (item.length === 0) {
             return res.status(404).json({ msg: 'No item found in this category' });
         }
