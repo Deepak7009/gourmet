@@ -11,4 +11,5 @@ const itemSchema = new mongoose.Schema({
     status: { type: String, enum: ["available", "soldout"], required: true }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Item', itemSchema);
+const Item = mongoose.model('Item', itemSchema);
+module.exports = Item;

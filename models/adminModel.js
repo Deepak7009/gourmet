@@ -7,4 +7,5 @@ const adminSchema = new mongoose.Schema({
     vendors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' }],
 }, { timestamps: true });
 
-module.exports = mongoose.model('Admin', adminSchema);
+const Admin = mongoose.model('Admin', adminSchema);
+module.exports = Admin;

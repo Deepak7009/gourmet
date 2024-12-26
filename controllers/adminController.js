@@ -3,6 +3,66 @@ const Vendor = require('../models/vendorModel');
 const Item = require('../models/itemModel');
 const { generateToken } = require('../utils/jwt');
 const { uploadOnCloudinary } = require("../utils/cloudinary.js");
+const Order = require('../models/orderModel.js');
+
+
+// Admin Signup (Registration)
+const signupAdmin = async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        // Check if the admin already exists
+        const existingAdmin = await Admin.findOne({ email });
+        if (existingAdmin) {
+            return res.status(400).json({ msg: 'Admin already exists' });
+        }
+
+        // Hash the password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create a new admin
+        const newAdmin = new Admin({
+            name,
+            email,
+            password: hashedPassword,
+        });
+
+        // Save the admin to the database
+        await newAdmin.save();
+
+        res.status(201).json({ msg: 'Admin created successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Admin Login
+const loginAdmin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Check if the admin exists
+        const admin = await Admin.findOne({ email });
+        if (!admin) {
+            return res.status(400).json({ msg: 'Invalid email or password' });
+        }
+
+        // Compare password with the hashed password in the database
+        const isMatch = await bcrypt.compare(password, admin.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Invalid email or password' });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        res.status(200).json({ token });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 
 // Get vendor details and cart
 const getVendorDetails = async (req, res) => {
@@ -58,37 +118,6 @@ const updateVendor = async (req, res) => {
         }
 
         res.status(200).json(updatedVendor);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
-};
-
-
-// Delete an item from vendor's cart
-const deleteItemFromCart = async (req, res) => {
-    try {
-        const vendorId = req.params.vendorId;
-        const itemId = req.params.itemId;
-
-        // Find the vendor
-        const vendor = await Vendor.findById(vendorId);
-        if (!vendor) {
-            return res.status(404).json({ msg: "Vendor not found" });
-        }
-
-        // Check if the item exists in the vendor's cart
-        const itemIndex = vendor.cart.indexOf(itemId);
-        if (itemIndex === -1) {
-            return res.status(404).json({ msg: "Item not found in vendor's cart" });
-        }
-
-        // Remove the item from the cart
-        vendor.cart.splice(itemIndex, 1);
-
-        // Save the updated vendor document
-        await vendor.save();
-
-        res.status(200).json({ msg: "Item removed from vendor's cart", vendor });
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -222,5 +251,139 @@ const deleteItem = async (req, res) => {
     }
 };
 
+// Update Item in Vendor's Cart
+const updateVendorCartItem = async (req, res) => {
+    try {
+        const { vendorId, itemId } = req.params;  // Get vendor ID and item ID from params
+        const { quantity } = req.body;  // Get the new quantity from request body
 
-module.exports = { createVendor, updateVendor, deleteVendor, addItem, updateItem, deleteItem, deleteItemFromCart, getVendorDetails };
+        // Validate the quantity
+        if (quantity <= 0) {
+            return res.status(400).json({ msg: 'Quantity must be greater than 0' });
+        }
+
+        // Find the vendor by ID
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor) {
+            return res.status(404).json({ msg: 'Vendor not found' });
+        }
+
+        // Find the order for the vendor's cart (assuming there is one ongoing order)
+        const order = await Order.findOne({ vendor: vendorId, status: 'pending' });
+        if (!order) {
+            return res.status(404).json({ msg: 'No pending order found for this vendor' });
+        }
+
+        // Find the item in the order's items array
+        const itemIndex = order.items.indexOf(itemId);
+        if (itemIndex === -1) {
+            return res.status(404).json({ msg: 'Item not found in the cart' });
+        }
+
+        // Update the quantity of the item (assuming the cart has the items by item ID)
+        // Assuming each item in the cart has a `quantity` field
+        const item = await Item.findById(itemId);
+        if (!item) {
+            return res.status(404).json({ msg: 'Item not found' });
+        }
+
+        // Update the quantity of the item in the order
+        order.items[itemIndex].quantity = quantity;
+
+        // Recalculate total amount if needed
+        order.totalAmount = order.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+
+        // Save the updated order
+        await order.save();
+
+        res.status(200).json({ msg: 'Cart item updated successfully', order });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+// Update Order Status (For Admin to Update Order Status)
+const updateOrderStatusByAdmin = async (req, res) => {
+    try {
+        const { orderId } = req.params;  // Get order ID from URL parameters
+        const { status, paymentStatus } = req.body;  // Get status and payment status from request body
+
+        // Validate status and paymentStatus
+        const validStatuses = ['pending', 'shipped', 'delivered', 'cancelled'];
+        const validPaymentStatuses = ['paid', 'unpaid'];
+
+        if (status && !validStatuses.includes(status)) {
+            return res.status(400).json({ msg: 'Invalid status' });
+        }
+        if (paymentStatus && !validPaymentStatuses.includes(paymentStatus)) {
+            return res.status(400).json({ msg: 'Invalid payment status' });
+        }
+
+        // Find the order by ID
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ msg: 'Order not found' });
+        }
+
+        // Update the order status and payment status
+        if (status) {
+            order.status = status;
+        }
+        if (paymentStatus) {
+            order.paymentStatus = paymentStatus;
+        }
+
+        // Save the updated order
+        await order.save();
+
+        res.status(200).json({ msg: 'Order status updated successfully', order });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+// Function to get all orders for admin
+const getAllOrders = async (req, res) => {
+    try {
+        // Fetch all orders with populated items and vendor details
+        const orders = await Order.find()
+            .populate('items', 'name price photo')  // Populating item details
+            .populate('vendor', 'name email');     // Populating vendor details
+
+        if (orders.length === 0) {
+            return res.status(404).json({ msg: 'No orders found' });
+        }
+
+        res.status(200).json(orders);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+// Function to get orders for a particular vendor
+const getVendorOrders = async (req, res) => {
+    try {
+        const { vendorId } = req.params;  // Get vendor ID from URL params
+
+        // Validate the vendor ID
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor) {
+            return res.status(404).json({ msg: 'Vendor not found' });
+        }
+
+        // Find all orders for this vendor
+        const orders = await Order.find({ vendor: vendorId })
+            .populate('items', 'name price photo')  // Populating item details
+            .populate('vendor', 'name email');     // Populating vendor details
+
+        if (orders.length === 0) {
+            return res.status(404).json({ msg: 'No orders found for this vendor' });
+        }
+
+        res.status(200).json(orders);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+module.exports = { getAllOrders, getVendorOrders, updateVendorCartItem, updateOrderStatusByAdmin, createVendor, updateVendor, deleteVendor, addItem, updateItem, deleteItem, getVendorDetails, signupAdmin, loginAdmin };
