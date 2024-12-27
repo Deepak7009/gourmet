@@ -43,16 +43,16 @@ router.get('/items',protectAdmin, viewItems);
 router.put("/update-item", protectAdmin, upload.fields([{ name: "image" }]), updateItem);
 
 // Delete an item
-router.delete("/item", protectAdmin, deleteItem);
+router.delete("/delete-item", protectAdmin, deleteItem);
 
 // Get vendor details and their cart
-router.get("/vendor", protectAdmin, getVendorDetails);
+router.get("/details-vendor", protectAdmin, getVendorDetails);
 
 // Update vendor details
-router.put("/vendor", protectAdmin, updateVendor);
+router.put("/update-vendor", protectAdmin, updateVendor);
 
 // Delete vendor (added missing deleteVendor route)
-router.delete("/vendor", protectAdmin, deleteVendor);
+router.delete("/delete-vendor", protectAdmin, deleteVendor);
 
 
 // Admin updates item in vendor's cart
