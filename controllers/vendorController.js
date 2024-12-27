@@ -5,6 +5,7 @@ const Order = require('../models/orderModel');
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Cart = require('../models/cartSchema');
 
 
 const viewItems = async (req, res) => {
@@ -64,10 +65,12 @@ const placeOrder = async (req, res) => {
         // Create the order
         const newOrder = new Order({
             items: orderItems, // Array of items with quantities
-            totalAmount: totalAmount || orderItems.reduce((total, orderItem) => {
-                const itemDoc = itemDocs.find(doc => doc._id.toString() === orderItem.item.toString());
-                return total + (itemDoc.price * orderItem.quantity);
-            }, 0), // Recalculate total if not provided
+            totalAmount:
+                // totalAmount ||
+                orderItems.reduce((total, orderItem) => {
+                    const itemDoc = itemDocs.find(doc => doc._id.toString() === orderItem.item.toString());
+                    return total + (itemDoc.price * orderItem.quantity);
+                }, 0), // Recalculate total if not provided
             vendor: vendorId,
             paymentMethod: paymentMethod || 'cash',
             deliveryAddress: deliveryAddress || '',
@@ -77,6 +80,17 @@ const placeOrder = async (req, res) => {
 
         // Save the order
         await newOrder.save();
+
+        // Find the user's cart by vendor (assuming 'vendor' is used in the Cart schema)
+        const cart = await Cart.findOne({ vendor: vendorId });
+        if (!cart) {
+            return res.status(404).json({ message: "Cart not found" });
+        }
+
+        // Update the cart document
+        cart.cartItems = [];
+        cart.totalPrice = 0;
+        await cart.save();
 
         res.status(201).json(newOrder);
     } catch (error) {
