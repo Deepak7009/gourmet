@@ -18,15 +18,13 @@ const createCart = async (vendorId) => {
   }
 };
 
-const getUserCart = async (req, res) => {
-  const userId = req.user._id; // Access userId from req.user
-
+const getUserCart = async (userId) => {
   const cart = await Cart.findOne({ vendor: userId }); // Assuming you're using 'vendor' field based on previous schema
   if (!cart) {
-    throw new Error("Cart not found");
+    throw new Error("Cart not found"); 
   }
 
-  const cartItems = await CartItem.find({ cart: cart._id }).populate("Item");
+  const cartItems = await CartItem.find({ cart: cart._id }).populate("product");
 
   let totalPrice = 0;
   let totalItem = 0;
@@ -59,15 +57,13 @@ const addCartItem = async (req, res) => {
     const userId = req.user._id; // Access userId from req.user
     const { productId, quantity } = req.body; // Access data from request body
 
-    // Find the cart of the user (assuming 'user' is the correct reference)
-    const cart = await Cart.findOne({ vendor: userId });
-    console.log("cart", cart);
+    // Find the cart of the user (assuming you meant to use userId, not vendorId)
+    const cart = await Cart.findOne({ vendor: userId }); // Assuming 'vendor' is the correct reference
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
 
-    // Find the product by productId
     const product = await Item.findById(productId);
 
     if (!product) {
@@ -81,31 +77,31 @@ const addCartItem = async (req, res) => {
     });
 
     if (existingCartItem) {
-      // If the item already exists, update its quantity and price
+      // Update the existing cart item
       existingCartItem.quantity += quantity;
-      existingCartItem.price = product.price; // Use the product price
+      existingCartItem.price = product.price; // Use product price
 
       await existingCartItem.save();
     } else {
-      // If the item doesn't exist, create a new cart item
+      // Create a new cart item without size
       const cartItem = new CartItem({
         cart: cart._id,
         product: product._id,
         userId, // Ensure userId is the correct reference to the user adding the item
         quantity,
-        price: product.price, // Use the product price
+        price: product.price, // Use product price
       });
 
       const createdCartItem = await cartItem.save();
-      cart.cartItems.push(createdCartItem); // Add the new item to the cart's cartItems array
+      cart.cartItems.push(createdCartItem); // Push the new item into the cart's cartItems array
       await cart.save();
     }
 
-    // Fetch the updated cart and return it in the response
-    const updatedCart = await getUserCart(userId);
-    res.status(200).json(updatedCart);
+    const updatedCart = await getUserCart(userId); // Fetch the updated cart
+
+    res.status(200).json(updatedCart); // Return the updated cart
   } catch (error) {
-    res.status(500).json({ message: error.message }); // Handle errors
+    res.status(500).json({ message: error.message }); // Handle any errors
   }
 };
 
