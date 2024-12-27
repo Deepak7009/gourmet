@@ -1,17 +1,23 @@
-const express = require('express');
-const { viewItems, placeOrder, updateOrderStatus, loginVendor } = require('../controllers/vendorController');
-const { protectVendor } = require('../middlewares/authMiddleware');
-const { getItemByCategory } = require('../controllers/adminController');
+const express = require("express");
+const {
+  viewItems,
+  placeOrder,
+  updateOrderStatus,
+  loginVendor,
+} = require("../controllers/vendorController");
+const { protectVendor } = require("../middlewares/authMiddleware");
+const { getItemByCategory } = require("../controllers/adminController");
+const { getUserCart } = require("../controllers/cartController");
 
 const router = express.Router();
 
-router.get('/items', viewItems);
-router.post('/cart', protectVendor, placeOrder);
+router.get("/items", viewItems);
+router.post("/cart", protectVendor, placeOrder);
+router.get("/getCart", protectVendor, getUserCart);
 router.put("/order/:orderId/update-status", protectVendor, updateOrderStatus);
-router.get('/category-item', getItemByCategory);
-
+router.get("/category-item", getItemByCategory);
 
 // Vendor login route
-router.post('/login', loginVendor);
+router.post("/login", loginVendor);
 
 module.exports = router;
