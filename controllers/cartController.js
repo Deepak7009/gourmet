@@ -18,23 +18,35 @@ const createCart = async (vendorId) => {
   }
 };
 
-const getUserCart = async (userId) => {
-  const cart = await Cart.findOne({ vendor: userId }); // Assuming you're using 'vendor' field based on previous schema
+const getUserCart = async (req, res) => {
+  const userId = req.user._id; // Access userId from req.user
+
+  const cart = await Cart.findOne({ vendor: userId }).populate({
+    path: "cartItems.item", // Correct path to populate 'item' in 'cartItems'
+    model: "Item", // Ensure 'Item' is the correct model
+  });
+
   if (!cart) {
     throw new Error("Cart not found");
   }
 
-  const cartItems = await CartItem.find({ cart: cart._id }).populate("Item");
-
   let totalPrice = 0;
   let totalItem = 0;
 
-  for (let cartItem of cartItems) {
-    totalPrice += cartItem.price * cartItem.quantity; // Using 'price' instead of 'discountedPrice'
-    totalItem += cartItem.quantity;
+  for (let cartItem of cart.cartItems) {
+    if (cartItem.item) {
+      console.log(cartItem.item); // Log the populated item
+      if (cartItem.item.price) {
+        totalPrice += cartItem.item.price * cartItem.quantity;
+        totalItem += cartItem.quantity;
+      } else {
+        console.log("Missing price for item in cartItem:", cartItem);
+      }
+    } else {
+      console.log("Item not found for cartItem:", cartItem);
+    }
   }
 
-  cart.cartItems = cartItems;
   cart.totalPrice = totalPrice;
   cart.totalItem = totalItem;
 
@@ -57,13 +69,14 @@ const addCartItem = async (req, res) => {
     const userId = req.user._id; // Access userId from req.user
     const { productId, quantity } = req.body; // Access data from request body
 
-    // Find the cart of the user (assuming you meant to use userId, not vendorId)
-    const cart = await Cart.findOne({ vendor: userId }); // Assuming 'vendor' is the correct reference
+    // Find the cart of the user (assuming 'vendor' is the correct reference)
+    const cart = await Cart.findOne({ vendor: userId });
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
 
+    // Find the product by productId
     const product = await Item.findById(productId);
 
     if (!product) {
@@ -71,37 +84,32 @@ const addCartItem = async (req, res) => {
     }
 
     // Check if the cart item already exists for the product
-    const existingCartItem = await CartItem.findOne({
-      cart: cart._id,
-      product: product._id,
-    });
+    const existingCartItemIndex = cart.cartItems.findIndex(
+      (cartItem) => cartItem.item.toString() === product._id.toString()
+    );
 
-    if (existingCartItem) {
-      // Update the existing cart item
-      existingCartItem.quantity += quantity;
-      existingCartItem.price = product.price; // Use product price
-
-      await existingCartItem.save();
+    if (existingCartItemIndex > -1) {
+      // If the item already exists, update its quantity
+      cart.cartItems[existingCartItemIndex].quantity += quantity;
     } else {
-      // Create a new cart item without size
-      const cartItem = new CartItem({
-        cart: cart._id,
-        product: product._id,
-        userId, // Ensure userId is the correct reference to the user adding the item
+      // If the item doesn't exist, create a new cart item
+      cart.cartItems.push({
+        item: product._id, // Reference the product ID
         quantity,
-        price: product.price, // Use product price
       });
-
-      const createdCartItem = await cartItem.save();
-      cart.cartItems.push(createdCartItem); // Push the new item into the cart's cartItems array
-      await cart.save();
     }
 
-    const updatedCart = await getUserCart(userId); // Fetch the updated cart
+    // Recalculate total price
+    cart.totalPrice = cart.cartItems.reduce((total, cartItem) => {
+      return total + cartItem.quantity * product.price; // Add price based on the quantity
+    }, 0);
 
-    res.status(200).json(updatedCart); // Return the updated cart
+    // Save the cart and send the response
+    await cart.save();
+    const updatedCart = await getUserCart(userId);
+    res.status(200).json(updatedCart);
   } catch (error) {
-    res.status(500).json({ message: error.message }); // Handle any errors
+    res.status(500).json({ message: error.message }); // Handle errors
   }
 };
 

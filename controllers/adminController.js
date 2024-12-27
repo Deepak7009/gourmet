@@ -287,7 +287,10 @@ const addItem = async (req, res) => {
 const updateItem = async (req, res) => {
   try {
     const { name, category, price, description, quantity, status } = req.body;
-    const {itemId} = req.query;
+    const { companyName, productName } = req.body.category || {}; // Handle nested category
+
+    const { itemId } = req.query;
+    console.dir(req.body)
 
     const files = req.files || {}; // Access uploaded files
     let uploadedImageUrl = null;
@@ -315,12 +318,19 @@ const updateItem = async (req, res) => {
 
     // Update item details
     item.name = name || item.name;
-    item.category = category || item.category;
     item.price = price || item.price;
     item.description = description || item.description;
     item.quantity = quantity || item.quantity;
     item.status = status || item.status;
     item.photo = uploadedImageUrl || item.photo;
+
+    // Update nested category fields
+    if (companyName || productName) {
+      item.category = {
+        companyName: companyName || item.category?.companyName,
+        productName: productName || item.category?.productName,
+      };
+    }
 
     // Save the updated item
     await item.save();
