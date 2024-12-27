@@ -14,10 +14,12 @@ const {
     getVendorDetails,
     signupAdmin,
     loginAdmin,
+    getAllVendors,
     getItemByCategory
 } = require('../controllers/adminController');
 const { protectAdmin } = require('../middlewares/authMiddleware');
 const { upload } = require('../middlewares/multer');
+const { viewItems } = require("../controllers/vendorController");
 
 const router = express.Router();
 
@@ -30,9 +32,12 @@ router.post('/login', loginAdmin);
 
 // Create a new vendor
 router.post('/vendor', protectAdmin, createVendor);
-
+router.get('/vendors', protectAdmin, getAllVendors);
 // Add a new item (with image upload)
 router.post('/item', protectAdmin, upload.fields([{ name: "image" }]), addItem);
+
+router.get('/items',protectAdmin, viewItems);
+
 
 // Update an existing item (with image upload)
 router.put("/update-item", protectAdmin, upload.fields([{ name: "image" }]), updateItem);
