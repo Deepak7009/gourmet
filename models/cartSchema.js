@@ -6,13 +6,10 @@ const cartSchema = new mongoose.Schema({
     ref: "Vendor",
     required: true,
   },
-  cartItems: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Cartitems",
-      required: true,
-    },
-  ],
+  cartItems: [{
+    item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
+    quantity: { type: Number, default: 1 }
+  }],
   totalPrice: {
     type: Number,
     required: true,

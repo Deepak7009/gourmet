@@ -73,15 +73,32 @@ const signupAdmin = async (req, res) => {
 // Admin Login
 const loginAdmin = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { emailOrMobile, password } = req.body;
 
-    // Check if the admin exists
-    const admin = await Admin.findOne({ email });
+    // Validate request payload
+    if (!emailOrMobile || !password) {
+      return res.status(400).json({ msg: "All fields are required" });
+    }
+
+    // Check if identifier is email or mobile
+    let admin;
+    const identifier = String(emailOrMobile);
+    if (identifier.includes("@")) {
+      admin = await Admin.findOne({ email: identifier });
+    } else {
+      admin = await Admin.findOne({ mobile: identifier });
+    }
+
+    // If admin not found
     if (!admin) {
       return res.status(400).json({ msg: "Invalid email or password" });
     }
 
-    // Compare password with the hashed password in the database
+    // Compare password
+    if (!admin.password) {
+      return res.status(400).json({ msg: "Password is not set for this account" });
+    }
+
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
       return res.status(400).json({ msg: "Invalid email or password" });
@@ -89,12 +106,14 @@ const loginAdmin = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, {
-      // expiresIn: "1h",
+      // expiresIn: "1h", // Token expires in 1 hour
     });
 
+    // Respond with token
     res.status(200).json({ token });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ msg: "Internal server error" });
   }
 };
 
@@ -313,63 +332,54 @@ const deleteItem = async (req, res) => {
   }
 };
 
-// Update Item in Vendor's Cart
 const updateVendorCartItem = async (req, res) => {
-  try {
-    const { vendorId, itemId } = req.query; // Get vendor ID and item ID from query
-    const { quantity } = req.body; // Get the new quantity from request body
+    try {
+        const { orderId } = req.query; // Get orderId from the URL parameters
+        const { items } = req.body;     // Get the new items array from the request body
 
-    // Validate the quantity
-    if (quantity <= 0) {
-      return res.status(400).json({ msg: "Quantity must be greater than 0" });
-    }
+        // Validate the items array
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ msg: 'Items array is required and cannot be empty' });
+        }
 
-    // Find the vendor by ID
-    const vendor = await Vendor.findById(vendorId);
-    if (!vendor) {
-      return res.status(404).json({ msg: "Vendor not found" });
-    }
+        // Find the order by ID
+        const order = await Order.findById(orderId).populate('items.item', 'name price');
+        if (!order) {
+            return res.status(404).json({ msg: 'Order not found' });
+        }
 
-    // Find the order for the vendor's cart (assuming there is one ongoing order)
-    const order = await Order.findOne({ vendor: vendorId, status: "pending" });
-    if (!order) {
-      return res
-        .status(404)
-        .json({ msg: "No pending order found for this vendor" });
-    }
+        // Process each item in the new items array
+        for (let i = 0; i < items.length; i++) {
+            const { item: itemId, quantity } = items[i];
 
-    // Find the item in the order's items array
-    const itemIndex = order.items.indexOf(itemId);
-    if (itemIndex === -1) {
-      return res.status(404).json({ msg: "Item not found in the cart" });
-    }
+            // Validate quantity
+            if (quantity <= 0) {
+                return res.status(400).json({ msg: 'Quantity must be greater than 0' });
+            }
 
-    // Update the quantity of the item (assuming the cart has the items by item ID)
-    // Assuming each item in the cart has a `quantity` field
-    const item = await Item.findById(itemId);
-    if (!item) {
-      return res.status(404).json({ msg: "Item not found" });
-    }
+            // Find the item in the order's items array
+            const itemIndex = order.items.findIndex(orderItem => orderItem.item.toString() === itemId.toString());
+            if (itemIndex === -1) {
+                return res.status(404).json({ msg: `Item with ID ${itemId} not found in the order` });
+            }
 
-    // Update the quantity of the item in the order
-    order.items[itemIndex].quantity = quantity;
+            // Update the quantity of the item in the order
+            order.items[itemIndex].quantity = quantity;
+        }
 
-    // Recalculate total amount if needed
-    order.totalAmount = order.items.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
+        // Recalculate total amount
+        order.totalAmount = order.items.reduce((total, orderItem) => total + (orderItem.item.price * orderItem.quantity), 0);
 
     // Save the updated order
     await order.save();
 
-    res.status(200).json({ msg: "Cart item updated successfully", order });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
+        res.status(200).json({ msg: 'Order items updated successfully', order });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
 };
 
-// Update Order Status (For Admin to Update Order Status)
+// Update Order Status (For Admin to Update Order Status) 
 const updateOrderStatusByAdmin = async (req, res) => {
   try {
     const { orderId } = req.query; // Get order ID from URL parameters
@@ -411,11 +421,11 @@ const updateOrderStatusByAdmin = async (req, res) => {
 
 // Function to get all orders for admin
 const getAllOrders = async (req, res) => {
-  try {
-    // Fetch all orders with populated items and vendor details
-    const orders = await Order.find()
-      .populate("items", "name price photo") // Populating item details
-      .populate("vendor", "name email"); // Populating vendor details
+    try {
+        // Fetch all orders with populated items and vendor details
+        const orders = await Order.find()
+            .populate('items.item', 'name price photo')  // Populating item details
+            .populate('vendor', 'name email');     // Populating vendor details
 
     if (orders.length === 0) {
       return res.status(404).json({ msg: "No orders found" });
@@ -438,10 +448,10 @@ const getVendorOrders = async (req, res) => {
       return res.status(404).json({ msg: "Vendor not found" });
     }
 
-    // Find all orders for this vendor
-    const orders = await Order.find({ vendor: vendorId })
-      .populate("items", "name price photo") // Populating item details
-      .populate("vendor", "name email"); // Populating vendor details
+        // Find all orders for this vendor
+        const orders = await Order.find({ vendor: vendorId })
+            .populate('items.item', 'name price photo')  // Populating item details
+            .populate('vendor', 'name email');     // Populating vendor details
 
     if (orders.length === 0) {
       return res.status(404).json({ msg: "No orders found for this vendor" });
@@ -454,32 +464,15 @@ const getVendorOrders = async (req, res) => {
 };
 
 const getItemByCategory = async (req, res) => {
-  const { category } = req.body;
-  try {
-    const item = await Item.find({ category: category })
-      .populate("vendor", "name email")
-      .populatate("order", "status");
-    if (item.length === 0) {
-      return res.status(404).json({ msg: "No item found in this category" });
+    const { category } = req.body;
+    try {
+        const item = await Item.find({ category: category });
+        if (item.length === 0) {
+            return res.status(404).json({ msg: 'No item found in this category' });
+        }
+        res.status(200).json(item);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
     }
-    res.status(200).json(item);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-module.exports = {
-  getItemByCategory,
-  getAllOrders,
-  getVendorOrders,
-  updateVendorCartItem,
-  updateOrderStatusByAdmin,
-  createVendor,
-  updateVendor,
-  deleteVendor,
-  addItem,
-  updateItem,
-  deleteItem,
-  getVendorDetails,
-  signupAdmin,
-  loginAdmin,
-};
+}
+module.exports = { getItemByCategory, getAllOrders, getVendorOrders, updateVendorCartItem, updateOrderStatusByAdmin, createVendor, updateVendor, deleteVendor, addItem, updateItem, deleteItem, getVendorDetails, signupAdmin, loginAdmin };
