@@ -271,7 +271,8 @@ const addItem = async (req, res) => {
 const updateItem = async (req, res) => {
   try {
     const { name, category, price, description, quantity, status } = req.body;
-    const itemId = req.query;
+    const {itemId} = req.query;
+
     const files = req.files || {}; // Access uploaded files
     let uploadedImageUrl = null;
 

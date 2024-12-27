@@ -35,7 +35,7 @@ router.post('/vendor', protectAdmin, createVendor);
 router.post('/item', protectAdmin, upload.fields([{ name: "image" }]), addItem);
 
 // Update an existing item (with image upload)
-router.put("/item", protectAdmin, upload.fields([{ name: "image" }]), updateItem);
+router.put("/update-item", protectAdmin, upload.fields([{ name: "image" }]), updateItem);
 
 // Delete an item
 router.delete("/item", protectAdmin, deleteItem);
