@@ -9,14 +9,44 @@ const bcrypt = require("bcryptjs");
 const { createCart } = require("./cartController.js");
 
 // Admin Signup (Registration)
+// const signupAdmin = async (req, res) => {
+//   try {
+//     const { name, email, password } = req.body;
+
+//     // Check if the admin already exists
+//     const existingAdmin = await Admin.findOne({ email });
+//     if (existingAdmin) {
+//       return res.status(400).json({ msg: "Admin already exists" });
+//     }
+
+//     // Hash the password
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedPassword = await bcrypt.hash(password, salt);
+
+//     // Create a new admin
+//     const newAdmin = new Admin({
+//       name,
+//       email,
+//       password: hashedPassword,
+//     });
+
+//     // Save the admin to the database
+//     await newAdmin.save();
+
+//     res.status(201).json({ msg: "Admin created successfully" });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 const signupAdmin = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check if the admin already exists
-    const existingAdmin = await Admin.findOne({ email });
+    // Check if any admin already exists
+    const existingAdmin = await Admin.findOne({});
     if (existingAdmin) {
-      return res.status(400).json({ msg: "Admin already exists" });
+      return res.status(400).json({ msg: "Admin already exists. Only one admin can be created." });
     }
 
     // Hash the password
@@ -39,6 +69,7 @@ const signupAdmin = async (req, res) => {
   }
 };
 
+
 // Admin Login
 const loginAdmin = async (req, res) => {
   try {
@@ -58,7 +89,7 @@ const loginAdmin = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      // expiresIn: "1h",
     });
 
     res.status(200).json({ token });

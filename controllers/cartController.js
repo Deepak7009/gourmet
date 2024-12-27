@@ -154,7 +154,7 @@ const updateCartItem = async (req, res) => {
     }
 
     // Fetch the product associated with the cart item
-    const product = await Product.findById(cartItem.product);
+    const product = await Item.findById(cartItem.product);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
