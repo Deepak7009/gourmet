@@ -1,5 +1,5 @@
 const express = require("express");
-const { loginVendor } = require("../controllers/vendorController");
+const { loginVendor, getVendorOrders } = require("../controllers/vendorController");
 const { viewItems } = require("../controllers/customerCareController");
 const { protectVendor } = require("../middlewares/authMiddleware");
 const { upload } = require("../middlewares/multer");
@@ -8,6 +8,7 @@ const router = express.Router();
 
 router.post("/login", loginVendor);
 router.get("/items", viewItems);
+router.get("/vendorOrder", protectVendor, getVendorOrders);
 // Update an existing item (with image upload)
 router.put(
   "/update-item",

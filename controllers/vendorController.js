@@ -37,4 +37,31 @@ const loginVendor = async (req, res) => {
   }
 };
 
-module.exports = { loginVendor };
+
+const getVendorOrders = async (req, res) => {
+    try {
+      // Vendor already attached to req.user by protectVendor middleware
+      const vendorId = req.user._id;
+  
+      const vendor = await Vendor.findById(vendorId).populate({
+        path: "orders",
+        select: "orderId orderDate status", // Include necessary fields only
+      });
+  
+      if (!vendor) {
+        return res.status(404).json({ error: "Vendor not found." });
+      }
+  
+      if (!vendor.orders || vendor.orders.length === 0) {
+        return res.status(200).json({ message: "No orders found for this vendor." });
+      }
+  
+      res.status(200).json(vendor.orders);
+    } catch (error) {
+      console.error("Error fetching vendor orders:", error.message);
+      res.status(500).json({ error: "Failed to fetch vendor orders." });
+    }
+  };
+  
+
+module.exports = { loginVendor, getVendorOrders };

@@ -16,6 +16,11 @@ const orderSchema = new mongoose.Schema({
     required: true,
     default: Date.now(),
   },
+  vendor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Vendor",
+    required: true,
+  },
   deliveryDate: {
     type: Date,
   },

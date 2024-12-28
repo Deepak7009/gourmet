@@ -1,59 +1,116 @@
 const OrderItems = require("../models/orderItemSchema");
 const Order = require("../models/orderSchema");
+const Vendor = require("../models/vendorSchema");
 const { getUserCart } = require("./cartController");
 
 
 // Create Order Function
+// const createOrder = async (req, res) => {
+//     try {
+//       const user = req.user; // Assuming user is attached to req by middleware
+//       if (!user) {
+//         return res.status(401).json({ error: "User not authenticated" });
+//       }
+  
+//       // Retrieve cart items
+//       let cart;
+//       try {
+//         cart = await getUserCart(user._id);
+//       } catch (error) {
+//         console.error("Error finding cart:", error.message);
+//         return res.status(500).json({ error: "Error retrieving cart" });
+//       }
+  
+//       if (!cart) {
+//         return res.status(404).json({ error: "Cart not found" });
+//       }
+  
+//       const orderItems = [];
+  
+//       // Create order items
+//       for (const item of cart.cartItems) {
+//         const orderItem = new OrderItems({
+//           productId: item.product,
+//           quantity: item.quantity,
+//           userId: user._id, // Assuming the user creating the order is the customerCare
+//         });
+  
+//         const createdOrderItem = await orderItem.save();
+//         orderItems.push(createdOrderItem._id); // Push only the `_id` as per the schema
+//       }
+  
+//       // Create order
+//       const order = new Order({
+//         customerCare: user._id, // Set the customerCare field
+//         orderItems: orderItems,
+//         totalItem: cart.cartItems.length,
+//         // orderStatus and orderDate will use their default values
+//       });
+  
+//       const savedOrder = await order.save();
+  
+//       res.status(201).json(savedOrder);
+//     } catch (error) {
+//       console.error("Error occurred:", error); // Log the full error object for debugging
+//       res.status(500).json({ error: error.message });
+//     }
+//   };  
+
 const createOrder = async (req, res) => {
-    try {
-      const user = req.user; // Assuming user is attached to req by middleware
-      if (!user) {
-        return res.status(401).json({ error: "User not authenticated" });
-      }
-  
-      // Retrieve cart items
-      let cart;
-      try {
-        cart = await getUserCart(user._id);
-      } catch (error) {
-        console.error("Error finding cart:", error.message);
-        return res.status(500).json({ error: "Error retrieving cart" });
-      }
-  
-      if (!cart) {
-        return res.status(404).json({ error: "Cart not found" });
-      }
-  
-      const orderItems = [];
-  
-      // Create order items
-      for (const item of cart.cartItems) {
-        const orderItem = new OrderItems({
-          productId: item.product,
-          quantity: item.quantity,
-          userId: user._id, // Assuming the user creating the order is the customerCare
-        });
-  
-        const createdOrderItem = await orderItem.save();
-        orderItems.push(createdOrderItem._id); // Push only the `_id` as per the schema
-      }
-  
-      // Create order
-      const order = new Order({
-        customerCare: user._id, // Set the customerCare field
-        orderItems: orderItems,
-        totalItem: cart.cartItems.length,
-        // orderStatus and orderDate will use their default values
-      });
-  
-      const savedOrder = await order.save();
-  
-      res.status(201).json(savedOrder);
-    } catch (error) {
-      console.error("Error occurred:", error); // Log the full error object for debugging
-      res.status(500).json({ error: error.message });
+  try {
+    const user = req.user; // Assuming user is attached to req by middleware
+    const { selectedVendor } = req.body;
+
+    if (!user) {
+      return res.status(401).json({ error: "User not authenticated" });
     }
-  };  
+
+    if (!selectedVendor) {
+      return res.status(400).json({ error: "Vendor selection is required" });
+    }
+
+    // Retrieve cart items
+    const cart = await getUserCart(user._id);
+    if (!cart) {
+      return res.status(404).json({ error: "Cart not found" });
+    }
+
+    const orderItems = [];
+
+    // Create order items
+    for (const item of cart.cartItems) {
+      const orderItem = new OrderItems({
+        productId: item.product,
+        quantity: item.quantity,
+        userId: user._id,
+      });
+
+      const createdOrderItem = await orderItem.save();
+      orderItems.push(createdOrderItem._id);
+    }
+
+    // Create order
+    const order = new Order({
+      customerCare: user._id,
+      orderItems,
+      totalItem: cart.cartItems.length,
+      vendor: selectedVendor, // Associate with the selected vendor
+    });
+
+    const savedOrder = await order.save();
+     // Update the vendor with the new order
+     await Vendor.findByIdAndUpdate(
+      selectedVendor,
+      { $push: { orders: savedOrder._id } }, // Add order ID to vendor's orders
+      { new: true, useFindAndModify: false }
+    );
+
+    res.status(201).json(savedOrder);
+  } catch (error) {
+    console.error("Error occurred:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
 
 // Place Order Function
 const placeOrder = async (req, res) => {

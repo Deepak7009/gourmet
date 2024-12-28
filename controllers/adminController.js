@@ -234,7 +234,7 @@ const getAllCustomerCares = async (req, res) => {
 const getAllVendors = async (req, res) => {
   try {
     // Fetch all vendor from the database
-    const vendor = await Vendor.find();
+    const vendor = await Vendor.find().populate('orders');
 
     // Return the list of vendor
     res.status(200).json(vendor);
