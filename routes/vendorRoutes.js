@@ -8,6 +8,7 @@ const {
 const { protectVendor } = require("../middlewares/authMiddleware");
 const { getItemByCategory } = require("../controllers/adminController");
 const { addCartItem, findUserCart, updateCartItem, removeCartItem } = require("../controllers/cartController");
+const { createOrder } = require("../controllers/orderController");
 
 const router = express.Router();
 
@@ -17,6 +18,8 @@ router.get("/getCart", protectVendor, findUserCart);
 router.post("/addToCard", protectVendor, addCartItem);
 router.post("/updateCartItem", protectVendor, updateCartItem);
 router.post("/removeCartItem", protectVendor, removeCartItem);
+router.post("/createOrder", protectVendor, createOrder);
+
 router.put("/order/:orderId/update-status", protectVendor, updateOrderStatus);
 router.get("/category-item", getItemByCategory);
 

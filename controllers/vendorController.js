@@ -177,7 +177,7 @@ const loginVendor = async (req, res) => {
         const token = jwt.sign(
             { id: vendor._id, email: vendor.email },
             process.env.JWT_SECRET, // Make sure to set JWT_SECRET in .env
-            { expiresIn: '1h' } // Token expiration
+            // { expiresIn: '1h' } // Token expiration
         );
 
         res.status(200).json({

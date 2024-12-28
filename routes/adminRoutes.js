@@ -1,7 +1,6 @@
 const express = require("express");
 
 const {
-    getAllOrders,
     getVendorOrders,
     updateVendorCartItem,
     updateOrderStatusByAdmin,
@@ -20,6 +19,7 @@ const {
 const { protectAdmin } = require('../middlewares/authMiddleware');
 const { upload } = require('../middlewares/multer');
 const { viewItems } = require("../controllers/vendorController");
+const { getAllOrders } = require("../controllers/orderController");
 
 const router = express.Router();
 
@@ -59,10 +59,11 @@ router.delete("/delete-vendor", protectAdmin, deleteVendor);
 router.put("/vendor/cart/item", protectAdmin, updateVendorCartItem);
 
 // Admin updates order status and payment status
-router.put("/order/status", protectAdmin, updateOrderStatusByAdmin);
+// router.put("/order/status", protectAdmin, updateOrderStatusByAdmin);
 
 // Get all orders (if needed)
-router.get('/orders', protectAdmin, getAllOrders);
+// router.get('/orders', protectAdmin, getAllOrders);
+router.get('/allOrders', protectAdmin, getAllOrders);
 
 // Get orders for a particular vendor (if needed)
 router.get('/vendor/orders', protectAdmin, getVendorOrders);

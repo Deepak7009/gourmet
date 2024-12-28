@@ -8,6 +8,7 @@ const createCart = async (vendorId) => {
     const cart = new Cart({
       vendor: vendorId, // Associate cart with the vendor's ID
       cartItems: [], // Initial cart items (empty array)
+      totalItem: 0,
       totalPrice: 0, // Initial total price (0 by default)
     });
 
@@ -21,7 +22,7 @@ const createCart = async (vendorId) => {
 const getUserCart = async (userId) => {
   const cart = await Cart.findOne({ vendor: userId }); // Assuming you're using 'vendor' field based on previous schema
   if (!cart) {
-    throw new Error("Cart not found"); 
+    throw new Error("Cart not found");
   }
 
   const cartItems = await CartItem.find({ cart: cart._id }).populate("product");
