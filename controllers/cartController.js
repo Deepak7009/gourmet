@@ -9,7 +9,7 @@ const createCart = async (customerCareId) => {
       customerCare: customerCareId, // Associate cart with the customerCare's ID
       cartItems: [], // Initial cart items (empty array)
       totalItem: 0,
-      totalPrice: 0, // Initial total price (0 by default)
+      // totalPrice: 0, // Initial total price (0 by default)
     });
 
     const createdCart = await cart.save(); // Save the cart to the database
@@ -27,16 +27,16 @@ const getUserCart = async (userId) => {
 
   const cartItems = await CartItem.find({ cart: cart._id }).populate("product");
 
-  let totalPrice = 0;
+  // let totalPrice = 0;
   let totalItem = 0;
 
   for (let cartItem of cartItems) {
-    totalPrice += cartItem.price * cartItem.quantity; // Using 'price' instead of 'discountedPrice'
+    // totalPrice += cartItem.price * cartItem.quantity; // Using 'price' instead of 'discountedPrice'
     totalItem += cartItem.quantity;
   }
 
   cart.cartItems = cartItems;
-  cart.totalPrice = totalPrice;
+  // cart.totalPrice = totalPrice;
   cart.totalItem = totalItem;
 
   return cart;
@@ -80,7 +80,7 @@ const addCartItem = async (req, res) => {
     if (existingCartItem) {
       // Update the existing cart item
       existingCartItem.quantity += quantity;
-      existingCartItem.price = product.price; // Use product price
+      // existingCartItem.price = product.price; // Use product price
 
       await existingCartItem.save();
     } else {
@@ -90,7 +90,7 @@ const addCartItem = async (req, res) => {
         product: product._id,
         userId, // Ensure userId is the correct reference to the user adding the item
         quantity,
-        price: product.price, // Use product price
+        // price: product.price, // Use product price
       });
 
       const createdCartItem = await cartItem.save();

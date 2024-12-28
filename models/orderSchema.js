@@ -19,11 +19,11 @@ const orderSchema = new mongoose.Schema({
   deliveryDate: {
     type: Date,
   },
-  totalPrice: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
+  // totalPrice: {
+  //   type: Number,
+  //   required: true,
+  //   default: 0,
+  // },
   orderStatus: {
     type: String,
     enum: [

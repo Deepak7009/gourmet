@@ -31,7 +31,6 @@ const createOrder = async (req, res) => {
         const orderItem = new OrderItems({
           productId: item.product,
           quantity: item.quantity,
-          price: item.price,
           userId: user._id, // Assuming the user creating the order is the customerCare
         });
   
@@ -43,7 +42,6 @@ const createOrder = async (req, res) => {
       const order = new Order({
         customerCare: user._id, // Set the customerCare field
         orderItems: orderItems,
-        totalPrice: cart.totalPrice,
         totalItem: cart.cartItems.length,
         // orderStatus and orderDate will use their default values
       });
