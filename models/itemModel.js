@@ -13,7 +13,7 @@ const itemSchema = new mongoose.Schema(
         // required: true 
     },
     },
-    price: { type: Number, required: true },
+    // price: { type: Number, required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
     photo: { type: String, required: false },
     description: { type: String, required: true },

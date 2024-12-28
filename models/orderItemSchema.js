@@ -9,13 +9,13 @@ const orderItemsSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  price: {
-    type: Number,
-    required: true,
-  },
+  // price: {
+  //   type: Number,
+  //   required: true,
+  // },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Vendor",
+    ref: "CustomerCare",
     required: true,
   },
 });

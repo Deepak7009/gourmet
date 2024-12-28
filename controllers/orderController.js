@@ -5,57 +5,55 @@ const { getUserCart } = require("./cartController");
 
 // Create Order Function
 const createOrder = async (req, res) => {
-  try {
-    const user = req.user; // Assuming user is attached to req by middleware
-    if (!user) {
-      return res.status(401).json({ error: "User not authenticated" });
-    }
-
-    // Retrieve cart items
-    let cart;
     try {
-      cart = await getUserCart(user._id);
-    } catch (error) {
-      console.error("Error finding cart:", error.message);
-      return res.status(500).json({ error: "Error retrieving cart" });
-    }
-
-    if (!cart) {
-      return res.status(404).json({ error: "Cart not found" });
-    }
-
-    const orderItems = [];
-
-    // Create order items
-    for (const item of cart.cartItems) {
-      const orderItem = new OrderItems({
-        productId: item.product,
-        quantity: item.quantity,
-        price: item.price,
-        userId: user._id, // Assuming the user creating the order is the vendor
+      const user = req.user; // Assuming user is attached to req by middleware
+      if (!user) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+  
+      // Retrieve cart items
+      let cart;
+      try {
+        cart = await getUserCart(user._id);
+      } catch (error) {
+        console.error("Error finding cart:", error.message);
+        return res.status(500).json({ error: "Error retrieving cart" });
+      }
+  
+      if (!cart) {
+        return res.status(404).json({ error: "Cart not found" });
+      }
+  
+      const orderItems = [];
+  
+      // Create order items
+      for (const item of cart.cartItems) {
+        const orderItem = new OrderItems({
+          productId: item.product,
+          quantity: item.quantity,
+          userId: user._id, // Assuming the user creating the order is the customerCare
+        });
+  
+        const createdOrderItem = await orderItem.save();
+        orderItems.push(createdOrderItem._id); // Push only the `_id` as per the schema
+      }
+  
+      // Create order
+      const order = new Order({
+        customerCare: user._id, // Set the customerCare field
+        orderItems: orderItems,
+        totalItem: cart.cartItems.length,
+        // orderStatus and orderDate will use their default values
       });
-
-      const createdOrderItem = await orderItem.save();
-      orderItems.push(createdOrderItem._id); // Push only the `_id` as per the schema
+  
+      const savedOrder = await order.save();
+  
+      res.status(201).json(savedOrder);
+    } catch (error) {
+      console.error("Error occurred:", error); // Log the full error object for debugging
+      res.status(500).json({ error: error.message });
     }
-
-    // Create order
-    const order = new Order({
-      vendor: user._id, // Set the vendor field
-      orderItems: orderItems,
-      totalPrice: cart.totalPrice,
-      totalItem: cart.cartItems.length,
-      // orderStatus and orderDate will use their default values
-    });
-
-    const savedOrder = await order.save();
-
-    res.status(201).json(savedOrder);
-  } catch (error) {
-    console.error("Error occurred:", error); // Log the full error object for debugging
-    res.status(500).json({ error: error.message });
-  }
-};
+  };  
 
 // Place Order Function
 const placeOrder = async (req, res) => {
@@ -195,7 +193,7 @@ const getUserOrderHistory = async (req, res) => {
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate("vendor")
+      .populate("customerCare")
       .populate({
         path: "orderItems",
         populate: {

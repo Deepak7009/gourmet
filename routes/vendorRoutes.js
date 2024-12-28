@@ -1,29 +1,21 @@
 const express = require("express");
-const {
-  viewItems,
-  placeOrder,
-  updateOrderStatus,
-  loginVendor,
-} = require("../controllers/vendorController");
+const { loginVendor } = require("../controllers/vendorController");
+const { viewItems } = require("../controllers/customerCareController");
 const { protectVendor } = require("../middlewares/authMiddleware");
-const { getItemByCategory } = require("../controllers/adminController");
-const { addCartItem, findUserCart, updateCartItem, removeCartItem } = require("../controllers/cartController");
-const { createOrder } = require("../controllers/orderController");
-
+const { upload } = require("../middlewares/multer");
+const { updateItem, addItem } = require("../controllers/adminController");
 const router = express.Router();
 
-router.get("/items", viewItems);
-router.post("/cart", protectVendor, placeOrder);
-router.get("/getCart", protectVendor, findUserCart);
-router.post("/addToCard", protectVendor, addCartItem);
-router.post("/updateCartItem", protectVendor, updateCartItem);
-router.post("/removeCartItem", protectVendor, removeCartItem);
-router.post("/createOrder", protectVendor, createOrder);
-
-router.put("/order/:orderId/update-status", protectVendor, updateOrderStatus);
-router.get("/category-item", getItemByCategory);
-
-// Vendor login route
 router.post("/login", loginVendor);
+router.get("/items", viewItems);
+// Update an existing item (with image upload)
+router.put(
+  "/update-item",
+  protectVendor,
+  upload.fields([{ name: "image" }]),
+  updateItem
+);
+router.post("/item", protectVendor, upload.fields([{ name: "image" }]), addItem);
+
 
 module.exports = router;

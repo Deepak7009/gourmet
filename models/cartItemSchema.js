@@ -17,13 +17,13 @@ const cartItemsSchema = new mongoose.Schema({
     required: true,
     default: 1,
   },
-  price: {
-    type: Number,
-    required: true,
-  },
+  // price: {
+  //   type: Number,
+  //   required: true,
+  // },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Vendor",
+    ref: "CustomerCare",
     required: true,
   },
 });

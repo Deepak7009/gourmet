@@ -3,13 +3,13 @@ const Cart = require("../models/cartSchema");
 const Item = require("../models/itemModel");
 
 // Create cart function
-const createCart = async (vendorId) => {
+const createCart = async (customerCareId) => {
   try {
     const cart = new Cart({
-      vendor: vendorId, // Associate cart with the vendor's ID
+      customerCare: customerCareId, // Associate cart with the customerCare's ID
       cartItems: [], // Initial cart items (empty array)
       totalItem: 0,
-      totalPrice: 0, // Initial total price (0 by default)
+      // totalPrice: 0, // Initial total price (0 by default)
     });
 
     const createdCart = await cart.save(); // Save the cart to the database
@@ -20,23 +20,23 @@ const createCart = async (vendorId) => {
 };
 
 const getUserCart = async (userId) => {
-  const cart = await Cart.findOne({ vendor: userId }); // Assuming you're using 'vendor' field based on previous schema
+  const cart = await Cart.findOne({ customerCare: userId }); // Assuming you're using 'customerCare' field based on previous schema
   if (!cart) {
     throw new Error("Cart not found");
   }
 
   const cartItems = await CartItem.find({ cart: cart._id }).populate("product");
 
-  let totalPrice = 0;
+  // let totalPrice = 0;
   let totalItem = 0;
 
   for (let cartItem of cartItems) {
-    totalPrice += cartItem.price * cartItem.quantity; // Using 'price' instead of 'discountedPrice'
+    // totalPrice += cartItem.price * cartItem.quantity; // Using 'price' instead of 'discountedPrice'
     totalItem += cartItem.quantity;
   }
 
   cart.cartItems = cartItems;
-  cart.totalPrice = totalPrice;
+  // cart.totalPrice = totalPrice;
   cart.totalItem = totalItem;
 
   return cart;
@@ -58,8 +58,8 @@ const addCartItem = async (req, res) => {
     const userId = req.user._id; // Access userId from req.user
     const { productId, quantity } = req.body; // Access data from request body
 
-    // Find the cart of the user (assuming you meant to use userId, not vendorId)
-    const cart = await Cart.findOne({ vendor: userId }); // Assuming 'vendor' is the correct reference
+    // Find the cart of the user (assuming you meant to use userId, not customerCareId)
+    const cart = await Cart.findOne({ customerCare: userId }); // Assuming 'customerCare' is the correct reference
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
@@ -80,7 +80,7 @@ const addCartItem = async (req, res) => {
     if (existingCartItem) {
       // Update the existing cart item
       existingCartItem.quantity += quantity;
-      existingCartItem.price = product.price; // Use product price
+      // existingCartItem.price = product.price; // Use product price
 
       await existingCartItem.save();
     } else {
@@ -90,7 +90,7 @@ const addCartItem = async (req, res) => {
         product: product._id,
         userId, // Ensure userId is the correct reference to the user adding the item
         quantity,
-        price: product.price, // Use product price
+        // price: product.price, // Use product price
       });
 
       const createdCartItem = await cartItem.save();
@@ -112,8 +112,8 @@ const removeCartItem = async (req, res) => {
     const { cartItemId } = req.body;
     console.log("cartItemId:", cartItemId);
 
-    // Find the cart associated with the user (assuming user is a vendor)
-    const cart = await Cart.findOne({ vendor: userId }); // Corrected to use 'vendor'
+    // Find the cart associated with the user (assuming user is a customerCare)
+    const cart = await Cart.findOne({ customerCare: userId }); // Corrected to use 'customerCare'
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
@@ -142,8 +142,8 @@ const updateCartItem = async (req, res) => {
     const userId = req.user._id; // Get userId from the logged-in user
     const { cartItemId, quantity } = req.body; // Get the cartItemId and quantity from the request
 
-    // Find the user's cart by vendor ID (instead of user)
-    const cart = await Cart.findOne({ vendor: userId }); // Assuming 'vendor' is used in the Cart schema
+    // Find the user's cart by customerCare ID (instead of user)
+    const cart = await Cart.findOne({ customerCare: userId }); // Assuming 'customerCare' is used in the Cart schema
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
@@ -206,8 +206,8 @@ const clearCart = async (req, res) => {
   try {
     const userId = req.user._id; // Access userId from req.user
 
-    // Find the user's cart by vendor (assuming 'vendor' is used in the Cart schema)
-    const cart = await Cart.findOne({ vendor: userId });
+    // Find the user's cart by customerCare (assuming 'customerCare' is used in the Cart schema)
+    const cart = await Cart.findOne({ customerCare: userId });
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
