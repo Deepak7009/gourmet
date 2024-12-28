@@ -32,7 +32,7 @@ const createOrder = async (req, res) => {
           productId: item.product,
           quantity: item.quantity,
           price: item.price,
-          userId: user._id, // Assuming the user creating the order is the vendor
+          userId: user._id, // Assuming the user creating the order is the customerCare
         });
   
         const createdOrderItem = await orderItem.save();
@@ -41,7 +41,7 @@ const createOrder = async (req, res) => {
   
       // Create order
       const order = new Order({
-        vendor: user._id, // Set the vendor field
+        customerCare: user._id, // Set the customerCare field
         orderItems: orderItems,
         totalPrice: cart.totalPrice,
         totalItem: cart.cartItems.length,
@@ -195,7 +195,7 @@ const getUserOrderHistory = async (req, res) => {
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate("vendor")
+      .populate("customerCare")
       .populate({
         path: "orderItems",
         populate: {

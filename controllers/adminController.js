@@ -1,5 +1,5 @@
 const Admin = require("../models/adminModel");
-const Vendor = require("../models/vendorModel");
+const CustomerCare = require("../models/customerCareModel");
 const Item = require("../models/itemModel");
 const { generateToken } = require("../utils/jwt");
 const { uploadOnCloudinary } = require("../utils/cloudinary.js");
@@ -7,6 +7,7 @@ const Order = require("../models/orderModel.js");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { createCart } = require("./cartController.js");
+const Vendor = require("../models/vendorSchema.js");
 
 // Admin Signup (Registration)
 // const signupAdmin = async (req, res) => {
@@ -120,24 +121,24 @@ const loginAdmin = async (req, res) => {
   }
 };
 
-// Get vendor details and cart
-const getVendorDetails = async (req, res) => {
+// Get customerCare details and cart
+const getCustomerCareDetails = async (req, res) => {
   try {
-    const vendorId = req.query;
+    const customerCareId = req.query;
 
-    // Find vendor and populate cart items
-    const vendor = await Vendor.findById(vendorId).populate("cart");
-    if (!vendor) {
-      return res.status(404).json({ msg: "Vendor not found" });
+    // Find customerCare and populate cart items
+    const customerCare = await CustomerCare.findById(customerCareId).populate("cart");
+    if (!customerCare) {
+      return res.status(404).json({ msg: "CustomerCare not found" });
     }
 
     res.status(200).json({
-      vendor: {
-        _id: vendor._id,
-        name: vendor.name,
-        email: vendor.email,
-        createdAt: vendor.createdAt,
-        cart: vendor.cart, // List of items in the cart
+      customerCare: {
+        _id: customerCare._id,
+        name: customerCare.name,
+        email: customerCare.email,
+        createdAt: customerCare.createdAt,
+        cart: customerCare.cart, // List of items in the cart
       },
     });
   } catch (error) {
@@ -145,6 +146,41 @@ const getVendorDetails = async (req, res) => {
   }
 };
 
+// Create customerCare
+const createCustomerCare = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Check if customerCare already exists
+    const existingCustomerCare = await CustomerCare.findOne({ email });
+    if (existingCustomerCare) {
+      return res.status(400).json({ msg: "CustomerCare already exists" });
+    }
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create a new customerCare with hashed password
+    const customerCare = await CustomerCare.create({
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    // Associate the customerCare with the admin (optional based on your application logic)
+    await Admin.findByIdAndUpdate(req.user.id, {
+      $push: { customerCares: customerCare._id },
+    });
+
+    // Create a cart for the newly created customerCare
+    const createdCart = await createCart(customerCare._id); // Passing customerCare's ID to createCart
+
+    res.status(201).json({ customerCare, cart: createdCart });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 // Create vendor
 const createVendor = async (req, res) => {
   try {
@@ -169,7 +205,7 @@ const createVendor = async (req, res) => {
 
     // Associate the vendor with the admin (optional based on your application logic)
     await Admin.findByIdAndUpdate(req.user.id, {
-      $push: { vendors: vendor._id },
+      $push: { vendor: vendor._id },
     });
 
     // Create a cart for the newly created vendor
@@ -181,61 +217,74 @@ const createVendor = async (req, res) => {
   }
 };
 
-// Controller to get all vendors
+// Controller to get all customerCares
+const getAllCustomerCares = async (req, res) => {
+  try {
+    // Fetch all customerCares from the database
+    const customerCares = await CustomerCare.find();
+
+    // Return the list of customerCares
+    res.status(200).json(customerCares);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Controller to get all customerCares
 const getAllVendors = async (req, res) => {
   try {
-    // Fetch all vendors from the database
-    const vendors = await Vendor.find();
+    // Fetch all vendor from the database
+    const vendor = await Vendor.find();
 
-    // Return the list of vendors
-    res.status(200).json(vendors);
+    // Return the list of vendor
+    res.status(200).json(vendor);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
-// Update vendor details
-const updateVendor = async (req, res) => {
+// Update customerCare details
+const updateCustomerCare = async (req, res) => {
   try {
-    const vendorId = req.query;
+    const customerCareId = req.query;
     const { name, email, password } = req.body;
 
-    const updatedVendor = await Vendor.findByIdAndUpdate(
-      vendorId,
+    const updatedCustomerCare = await CustomerCare.findByIdAndUpdate(
+      customerCareId,
       { name, email, password },
-      { new: true, runValidators: true } // Return the updated vendor and validate the inputs
+      { new: true, runValidators: true } // Return the updated customerCare and validate the inputs
     );
 
-    if (!updatedVendor) {
-      return res.status(404).json({ msg: "Vendor not found" });
+    if (!updatedCustomerCare) {
+      return res.status(404).json({ msg: "CustomerCare not found" });
     }
 
-    res.status(200).json(updatedVendor);
+    res.status(200).json(updatedCustomerCare);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
-// Delete vendor
-const deleteVendor = async (req, res) => {
+// Delete customerCare
+const deleteCustomerCare = async (req, res) => {
   try {
-    const vendorId = req.query;
+    const customerCareId = req.query;
 
-    // Check if the vendor exists
-    const vendor = await Vendor.findById(vendorId);
-    if (!vendor) {
-      return res.status(404).json({ msg: "Vendor not found" });
+    // Check if the customerCare exists
+    const customerCare = await CustomerCare.findById(customerCareId);
+    if (!customerCare) {
+      return res.status(404).json({ msg: "CustomerCare not found" });
     }
 
-    // Remove the vendor from the admin's list of vendors
+    // Remove the customerCare from the admin's list of customerCares
     await Admin.findByIdAndUpdate(req.user.id, {
-      $pull: { vendors: vendorId },
+      $pull: { customerCares: customerCareId },
     });
 
-    // Delete the vendor
-    await vendor.remove();
+    // Delete the customerCare
+    await customerCare.remove();
 
-    res.status(200).json({ msg: "Vendor deleted successfully" });
+    res.status(200).json({ msg: "CustomerCare deleted successfully" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -269,7 +318,7 @@ const addItem = async (req, res) => {
     const item = await Item.create({
       name,
       category,
-      price,
+      // price,
       description,
       quantity,
       status,
@@ -318,7 +367,7 @@ const updateItem = async (req, res) => {
 
     // Update item details
     item.name = name || item.name;
-    item.price = price || item.price;
+    // item.price = price || item.price;
     item.description = description || item.description;
     item.quantity = quantity || item.quantity;
     item.status = status || item.status;
@@ -359,7 +408,7 @@ const deleteItem = async (req, res) => {
   }
 };
 
-const updateVendorCartItem = async (req, res) => {
+const updateCustomerCareCartItem = async (req, res) => {
   try {
     const { orderId } = req.query; // Get orderId from the URL parameters
     const { items } = req.body; // Get the new items array from the request body
@@ -461,10 +510,10 @@ const updateOrderStatusByAdmin = async (req, res) => {
 // Function to get all orders for admin
 const getAllOrders = async (req, res) => {
   try {
-    // Fetch all orders with populated items and vendor details
+    // Fetch all orders with populated items and customerCare details
     const orders = await Order.find()
       .populate("items.item", "name price photo") // Populating item details
-      .populate("vendor", "name email"); // Populating vendor details
+      .populate("customerCare", "name email"); // Populating customerCare details
 
     if (orders.length === 0) {
       return res.status(404).json({ msg: "No orders found" });
@@ -476,24 +525,24 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-// Function to get orders for a particular vendor
-const getVendorOrders = async (req, res) => {
+// Function to get orders for a particular customerCare
+const getCustomerCareOrders = async (req, res) => {
   try {
-    const { vendorId } = req.query; // Get vendor ID from URL query
+    const { customerCareId } = req.query; // Get customerCare ID from URL query
 
-    // Validate the vendor ID
-    const vendor = await Vendor.findById(vendorId);
-    if (!vendor) {
-      return res.status(404).json({ msg: "Vendor not found" });
+    // Validate the customerCare ID
+    const customerCare = await CustomerCare.findById(customerCareId);
+    if (!customerCare) {
+      return res.status(404).json({ msg: "CustomerCare not found" });
     }
 
-    // Find all orders for this vendor
-    const orders = await Order.find({ vendor: vendorId })
+    // Find all orders for this customerCare
+    const orders = await Order.find({ customerCare: customerCareId })
       .populate("items.item", "name price photo") // Populating item details
-      .populate("vendor", "name email"); // Populating vendor details
+      .populate("customerCare", "name email"); // Populating customerCare details
 
     if (orders.length === 0) {
-      return res.status(404).json({ msg: "No orders found for this vendor" });
+      return res.status(404).json({ msg: "No orders found for this customerCare" });
     }
 
     res.status(200).json(orders);
@@ -517,17 +566,19 @@ const getItemByCategory = async (req, res) => {
 module.exports = {
   getItemByCategory,
   getAllOrders,
-  getVendorOrders,
-  updateVendorCartItem,
+  getCustomerCareOrders,
+  updateCustomerCareCartItem,
   updateOrderStatusByAdmin,
-  createVendor,
-  updateVendor,
-  deleteVendor,
+  createCustomerCare,
+  updateCustomerCare,
+  deleteCustomerCare,
   addItem,
   updateItem,
   deleteItem,
-  getVendorDetails,
+  getCustomerCareDetails,
   signupAdmin,
   loginAdmin,
-  getAllVendors,
+  getAllCustomerCares,
+  createVendor,
+  getAllVendors
 };

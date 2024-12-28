@@ -6,7 +6,7 @@ const orderSchema = new mongoose.Schema({
         quantity: { type: Number, default: 1 }
     }],
     totalAmount: { type: Number, required: true },
-    vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
+    customerCare: { type: mongoose.Schema.Types.ObjectId, ref: 'CustomerCare' },
     orderDate: { type: Date, default: Date.now },
     status: { type: String, enum: ['pending', 'shipped', 'delivered ', 'cancelled'], default: 'pending' },
     paymentMethod: { type: String, enum: ['cash', 'card', 'online'], default: 'cash' },

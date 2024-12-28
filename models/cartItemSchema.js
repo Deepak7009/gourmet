@@ -23,7 +23,7 @@ const cartItemsSchema = new mongoose.Schema({
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Vendor",
+    ref: "CustomerCare",
     required: true,
   },
 });
