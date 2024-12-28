@@ -43,10 +43,21 @@ const getVendorOrders = async (req, res) => {
       // Vendor already attached to req.user by protectVendor middleware
       const vendorId = req.user._id;
   
-      const vendor = await Vendor.findById(vendorId).populate({
-        path: "orders",
-        select: "orderId orderDate status", // Include necessary fields only
-      });
+         // Populate the 'orders' and the 'orderItems' within each order
+         const vendor = await Vendor.findById(vendorId).populate({
+            path: 'orders', // Populate the 'orders' field in the vendor document
+            populate: [
+              {
+                path: 'orderItems', // Populate the 'orderItems' field within each order
+                populate: [
+                  {
+                    path: 'productId', // Populate the 'productId' to get the product details
+                    select: 'name ', // Select the fields you want for the product
+                  },
+                ],
+              },
+            ],
+          });
   
       if (!vendor) {
         return res.status(404).json({ error: "Vendor not found." });
