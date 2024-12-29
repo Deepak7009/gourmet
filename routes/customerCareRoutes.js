@@ -19,7 +19,7 @@ router.post("/addToCard", protectCustomerCare, addCartItem);
 router.post("/updateCartItem", protectCustomerCare, updateCartItem);
 router.post("/removeCartItem", protectCustomerCare, removeCartItem);
 router.post("/createOrder", protectCustomerCare, createOrder);
-router.get("/vendors", protectCustomerCare, getAllVendors);
+router.get("/vendors", protectCustomerCare, getAllVendors); 
 
 
 router.put("/order/:orderId/update-status", protectCustomerCare, updateOrderStatus);
